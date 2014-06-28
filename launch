@@ -1,0 +1,242 @@
+package.cpath=package.cpath..';.\\?.dll'
+require("lfs")
+require("zip")
+
+dofile("version")
+
+for k,v in pairs(lstg) do _G[k]=v end
+UnitList=ObjList
+GetnUnit=GetnObj
+
+function Serialize(o)
+	if type(o)=='number' then
+		return tostring(o)
+	elseif type(o)=='string' then
+		return string.format('%q',o)
+	elseif type(o)=='boolean' then
+		return tostring(o)
+	elseif type(o)=='nil' then
+		return 'nil'
+	elseif type(o)=='table' then
+		if getmetatable(o) and getmetatable(o).data then o=getmetatable(o).data end
+		local r='{'
+		for k,v in pairs(o) do
+			if type(k)=='number' then k='['..k..']'
+			elseif type(k)=='string' then k=string.format('[%q]',k)
+			else error('cannot serialize a ' .. type(k)..' key')
+			end
+			r=r..k..'='..Serialize(v)..','
+		end
+		return r..'}'
+	else
+		error('cannot serialize a ' .. type(o))
+	end
+end
+
+function DeSerialize(s)
+	return assert(loadstring('return '..s))()
+end
+
+KEY={NULL=0x00}
+
+KEY.LBUTTON=0x01
+KEY.RBUTTON=0x02
+KEY.MBUTTON=0x04
+
+KEY.ESCAPE=0x1B
+KEY.BACKSPACE=0x08
+KEY.TAB=0x09
+KEY.ENTER=0x0D
+KEY.SPACE=0x20
+
+KEY.SHIFT=0x10
+KEY.CTRL=0x11
+KEY.ALT=0x12
+
+KEY.LWIN=0x5B
+KEY.RWIN=0x5C
+KEY.APPS=0x5D
+
+KEY.PAUSE=0x13
+KEY.CAPSLOCK=0x14
+KEY.NUMLOCK=0x90
+KEY.SCROLLLOCK=0x91
+
+KEY.PGUP=0x21
+KEY.PGDN=0x22
+KEY.HOME=0x24
+KEY.END=0x23
+KEY.INSERT=0x2D
+KEY.DELETE=0x2E
+
+KEY.LEFT=0x25
+KEY.UP=0x26
+KEY.RIGHT=0x27
+KEY.DOWN=0x28
+
+KEY['0']=0x30
+KEY['1']=0x31
+KEY['2']=0x32
+KEY['3']=0x33
+KEY['4']=0x34
+KEY['5']=0x35
+KEY['6']=0x36
+KEY['7']=0x37
+KEY['8']=0x38
+KEY['9']=0x39
+
+KEY.A=0x41
+KEY.B=0x42
+KEY.C=0x43
+KEY.D=0x44
+KEY.E=0x45
+KEY.F=0x46
+KEY.G=0x47
+KEY.H=0x48
+KEY.I=0x49
+KEY.J=0x4A
+KEY.K=0x4B
+KEY.L=0x4C
+KEY.M=0x4D
+KEY.N=0x4E
+KEY.O=0x4F
+KEY.P=0x50
+KEY.Q=0x51
+KEY.R=0x52
+KEY.S=0x53
+KEY.T=0x54
+KEY.U=0x55
+KEY.V=0x56
+KEY.W=0x57
+KEY.X=0x58
+KEY.Y=0x59
+KEY.Z=0x5A
+
+KEY.GRAVE=0xC0
+KEY.MINUS=0xBD
+KEY.EQUALS=0xBB
+KEY.BACKSLASH=0xDC
+KEY.LBRACKET=0xDB
+KEY.RBRACKET=0xDD
+KEY.SEMICOLON=0xBA
+KEY.APOSTROPHE=0xDE
+KEY.COMMA=0xBC
+KEY.PERIOD=0xBE
+KEY.SLASH=0xBF
+
+KEY.NUMPAD0=0x60
+KEY.NUMPAD1=0x61
+KEY.NUMPAD2=0x62
+KEY.NUMPAD3=0x63
+KEY.NUMPAD4=0x64
+KEY.NUMPAD5=0x65
+KEY.NUMPAD6=0x66
+KEY.NUMPAD7=0x67
+KEY.NUMPAD8=0x68
+KEY.NUMPAD9=0x69
+
+KEY.MULTIPLY=0x6A
+KEY.DIVIDE=0x6F
+KEY.ADD=0x6B
+KEY.SUBTRACT=0x6D
+KEY.DECIMAL=0x6E
+
+KEY.F1=0x70
+KEY.F2=0x71
+KEY.F3=0x72
+KEY.F4=0x73
+KEY.F5=0x74
+KEY.F6=0x75
+KEY.F7=0x76
+KEY.F8=0x77
+KEY.F9=0x78
+KEY.F10=0x79
+KEY.F11=0x7A
+KEY.F12=0x7B
+
+CHARSET_ANSI=0
+CHARSET_DEFAULT=1
+CHARSET_SYMBOL=2
+CHARSET_BALTIC=186
+CHARSET_CHINESEBIG5=136
+CHARSET_EASTEUROPE=238
+CHARSET_GB2312=134
+CHARSET_GREEK=161
+CHARSET_HANGUL=129
+CHARSET_MAC=77
+CHARSET_OEM=255
+CHARSET_RUSSIAN=204
+CHARSET_SHIFTJIS=128
+CHARSET_TURKISH=162
+CHARSET_VIETNAMESE=163
+
+default_setting=
+{
+	allowsnapshot=true,
+	username='User',
+	charset=CHARSET_DEFAULT,
+	font='',
+	timezone=8,
+	resx=1024,
+	resy=768,
+	windowed=false,
+	vsync=true,
+	sevolume=100,
+	bgmvolume=100,
+	keys={
+		up=KEY.UP,
+		down=KEY.DOWN,
+		left=KEY.LEFT,
+		right=KEY.RIGHT,
+		slow=KEY.SHIFT,
+		shoot=KEY.Z,
+		spell=KEY.X,
+		special=KEY.SPACE,
+	},
+	keysys={
+		repfast=KEY.CTRL,
+		repslow=KEY.SHIFT,
+		menu=KEY.ESCAPE,
+		snapshot=KEY.HOME,
+	},
+}
+
+do
+	local f,msg
+	f,msg=io.open('setting','r')
+	if f==nil then
+		setting=DeSerialize(Serialize(default_setting))
+	else
+		setting=DeSerialize(f:read('*a'))
+		f:close()
+	end
+end
+
+if #arg>=2 then loadstring(arg[2])() end
+
+if not start_game then
+	setting.mod='launcher'
+	setting.resx=480
+	setting.resy=640
+	setting.windowed=true
+	setting.nosplash=true
+	setting.allowsnapshot=false
+end
+
+if updatelib then
+	lfs.chdir('data')
+	os.execute('..\\zip -r -u ..\\data.zip .\\*')
+	lfs.chdir('..\\')
+end
+
+LoadPack('data.zip')
+LoadPack('mod\\'..setting.mod..'.zip')
+
+SetSplash(false)
+SetTitle(setting.mod)
+SetWindowed(setting.windowed)
+SetResolution(setting.resx,setting.resy)
+SetFPS(60)
+SetVsync((not setting.windowed) and setting.vsync)
+SetSEVolume(setting.sevolume)
+SetBGMVolume(setting.bgmvolume)
